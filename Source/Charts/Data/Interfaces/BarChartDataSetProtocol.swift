@@ -39,4 +39,8 @@ public protocol BarChartDataSetProtocol: BarLineScatterCandleBubbleChartDataSetP
     
     /// array of labels used to describe the different values of the stacked bars
     var stackLabels: [String] { get set }
+    
+    /// the radius used for drawing radius around the bars. If barRadius == 0, no radius will be drawn.
+    /// the corner used for drawing radius around the bars.
+    var barRadius: [ChartRadius] {get set}
 }

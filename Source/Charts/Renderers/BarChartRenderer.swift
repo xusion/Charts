@@ -369,6 +369,8 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         for j in buffer.indices
         {
             let barRect = buffer[j]
+            let index = j % stackSize
+            let barRadius = isStacked ? index < dataSet.barRadius.count ? dataSet.barRadius[index] : nil : dataSet.barRadius.first ?? nil
             
             guard viewPortHandler.isInBoundsLeft(barRect.origin.x + barRect.size.width) else { continue }
             guard viewPortHandler.isInBoundsRight(barRect.origin.x) else { break }
@@ -379,13 +381,14 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.setFillColor(dataSet.color(atIndex: j).cgColor)
             }
             
-            context.fill(barRect)
-            
             if drawBorder
             {
                 context.setStrokeColor(borderColor.cgColor)
                 context.setLineWidth(borderWidth)
-                context.stroke(barRect)
+                drawChart(context: context, dataSet: dataSet, barRect: barRect, barRadius: barRadius, drawBorder: true)
+            }else
+            {
+                drawChart(context: context, dataSet: dataSet, barRect: barRect, barRadius: barRadius, drawBorder: false)
             }
 
             // Create and append the corresponding accessibility element to accessibilityOrderedElements
@@ -715,6 +718,8 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.setAlpha(set.highlightAlpha)
                 
                 let isStack = high.stackIndex >= 0 && e.isStacked
+                let index = high.stackIndex
+                let barRadius = isStack ? index < set.barRadius.count ? set.barRadius[index] : nil : set.barRadius.first ?? nil
                 
                 let y1: Double
                 let y2: Double
@@ -728,10 +733,14 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                     }
                     else
                     {
-                        let range = e.ranges?[high.stackIndex]
-                        
-                        y1 = range?.from ?? 0.0
-                        y2 = range?.to ?? 0.0
+                        if let ranges = e.ranges, high.stackIndex < ranges.count{
+                            let range = ranges[high.stackIndex]
+                            y1 = range.from
+                            y2 = range.to
+                        }else{
+                            y1 = 0.0
+                            y2 = 0.0
+                        }
                     }
                 }
                 else
@@ -744,7 +753,7 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 
                 setHighlightDrawPos(highlight: high, barRect: barRect)
                 
-                context.fill(barRect)
+                drawChart(context: context, dataSet: set, barRect: barRect, barRadius: barRadius, drawBorder: false)
             }
         }
     }
@@ -832,4 +841,72 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
 
         return element
     }
+    
+    private func drawChart(context: CGContext, dataSet: BarChartDataSetProtocol, barRect: CGRect, barRadius: ChartRadius?, drawBorder: Bool){
+        if let barRadius = barRadius, barRadius.radius > 0{
+            let radius = min(barRadius.radius, barRect.height / 2)
+            let corner = barRadius.corner
+            let isTopLeftRadius = corner.contains(.topLeft)
+            let isTopRightRadius = corner.contains(.topRight)
+            let isBottomLeftRadius = corner.contains(.bottomLeft)
+            let isBottomRightRadius = corner.contains(.bottomRight)
+            
+            var topLeftRadius = 0.0
+            var topRightRadius = 0.0
+            var bottomLeftRadius = 0.0
+            var bottomRightRadius = 0.0
+            
+            if(isTopLeftRadius || isTopRightRadius || isBottomLeftRadius || isBottomRightRadius)
+            {
+                if(isTopLeftRadius){
+                    topLeftRadius = radius
+                }
+                if(isTopRightRadius){
+                    topRightRadius = radius
+                }
+                if(isBottomLeftRadius){
+                    bottomLeftRadius = radius
+                }
+                if(isBottomRightRadius){
+                    bottomRightRadius = radius
+                }
+            }else {
+                topRightRadius = radius
+                topLeftRadius = radius
+                bottomLeftRadius = radius
+                bottomRightRadius = radius
+            }
+            
+            let minx = CGRectGetMinX(barRect);
+            let midx = CGRectGetMidX(barRect);
+            let maxx = CGRectGetMaxX(barRect);
+            let miny = CGRectGetMinY(barRect);
+            let midy = CGRectGetMidY(barRect);
+            let maxy = CGRectGetMaxY(barRect);
+            
+            context.move(to: CGPoint(x: minx, y: midy))
+            context.addArc(tangent1End: CGPoint(x: minx, y: miny), tangent2End: CGPoint(x: midx, y: miny), radius: topLeftRadius)
+            context.addArc(tangent1End: CGPoint(x: maxx, y: miny), tangent2End: CGPoint(x: maxx, y: midy), radius: topRightRadius)
+            context.addArc(tangent1End: CGPoint(x: maxx, y: maxy), tangent2End: CGPoint(x: midx, y: maxy), radius: bottomRightRadius)
+            context.addArc(tangent1End: CGPoint(x: minx, y: maxy), tangent2End: CGPoint(x: minx, y: midy), radius: bottomLeftRadius)
+            context.closePath()
+            
+            if drawBorder
+            {
+                context.drawPath(using: .fillStroke)
+            }else{
+                context.drawPath(using: .fill)
+            }
+            
+        }else{
+            
+            context.fill(barRect)
+            
+            if drawBorder
+            {
+                context.stroke(barRect)
+            }
+        }
+    }
+
 }

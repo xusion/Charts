@@ -63,4 +63,9 @@ public protocol CandleChartDataSetProtocol: LineScatterCandleRadarChartDataSetPr
     
     /// Are decreasing values drawn as filled?
     var isDecreasingFilled: Bool { get }
+    
+    /// the radius used for drawing radius around the bars. If barRadius == 0, no radius will be drawn.
+    /// the corner used for drawing radius around the bars.
+    var barRadius: [ChartRadius] {get set}
+
 }

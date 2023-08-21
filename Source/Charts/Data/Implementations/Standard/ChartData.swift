@@ -449,7 +449,7 @@ extension ChartData: MutableCollection
 
     public subscript(position: Index) -> Element
     {
-        get { return dataSets[position] }
+        get { return position < dataSets.count ? dataSets[position] : dataSets[dataSets.count - 1] }
         set { self._dataSets[position] = newValue }
     }
 }
@@ -570,5 +570,20 @@ extension ChartData
 
         guard let index = firstIndex(where: { $0.entryForXValue(entry.x, closestToY: entry.y) === entry }) else { return nil }
         return self[index]
+    }
+}
+
+open class ChartRadius: NSObject{
+    
+    /// the corner used for drawing radius around the bars.
+    open var corner: UIRectCorner = .allCorners
+    
+    /// the radius used for drawing radius around the bars. If barRadius == 0, no radius will be drawn.
+    open var radius: CGFloat = 0
+    
+    public init(radius: CGFloat, corner: UIRectCorner = .allCorners){
+        super.init()
+        self.radius = radius
+        self.corner = corner
     }
 }

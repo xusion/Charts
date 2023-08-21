@@ -44,6 +44,7 @@ open class ZoomViewJob: ViewPortJob
     
     open override func doJob()
     {
+        guard let viewPortHandler = viewPortHandler, let transformer = transformer, let view = view else { return }
         var matrix = viewPortHandler.setZoom(scaleX: scaleX, scaleY: scaleY)
         viewPortHandler.refresh(newMatrix: matrix, chart: view, invalidate: false)
         
